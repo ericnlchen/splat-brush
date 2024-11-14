@@ -4,4 +4,5 @@ demo/assets/data
 
 build-ts/*
 !build-ts/index.html
-assets/data
+build-ts/assets/data
+!build-ts/assets

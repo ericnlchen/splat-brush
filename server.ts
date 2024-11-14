@@ -2,7 +2,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
-let baseDirectory = '.';
+let baseDirectory = './build-ts/';
 let port = 8080;
 let host = 'localhost';
 let lasttRequesTime = performance.now() / 1000;
