@@ -1,3 +1,7 @@
 build
 node_modules
 demo/assets/data
+
+build-ts/*
+!build-ts/index.html
+assets/data

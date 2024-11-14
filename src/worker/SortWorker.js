@@ -229,7 +229,8 @@ export function createSortWorker(splatCount, useSharedMemory, enableSIMDInSort, 
         }
     }
 
-    const sorterWasmBinaryString = atob(sourceWasm);
+    const _sourceWasm = sourceWasm.split(',')[1];
+    const sorterWasmBinaryString = atob(_sourceWasm);
     const sorterWasmBytes = new Uint8Array(sorterWasmBinaryString.length);
     for (let i = 0; i < sorterWasmBinaryString.length; i++) {
         sorterWasmBytes[i] = sorterWasmBinaryString.charCodeAt(i);

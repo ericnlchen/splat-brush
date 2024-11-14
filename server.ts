@@ -6,17 +6,6 @@ let baseDirectory = '.';
 let port = 8080;
 let host = 'localhost';
 let lasttRequesTime = performance.now() / 1000;
-for(let i = 0; i < process.argv.length; ++i) {
-  if (process.argv[i] == '-d' && i < process.argv.length - 1) {
-    baseDirectory = process.argv[i + 1];
-  }
-  if (process.argv[i] == '-p' && i < process.argv.length - 1) {
-    port = process.argv[i + 1];
-  }
-  if (process.argv[i] == '-h' && i < process.argv.length - 1) {
-    host = process.argv[i + 1];
-  } 
-}
 
 function sleep(ms) {
   return new Promise((resolve) => {

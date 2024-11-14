@@ -809,6 +809,7 @@ export class Viewer {
                 'scale': options.scale,
                 'splatAlphaRemovalThreshold': options.splatAlphaRemovalThreshold,
             };
+            console.log(splatBuffer, addSplatBufferOptions)
             return this.addSplatBuffers([splatBuffer], [addSplatBufferOptions],
                                          finalBuild, firstBuild && showLoadingUI, showLoadingUI,
                                          progressiveLoad, progressiveLoad).then(() => {

@@ -984,6 +984,7 @@ export class SplatBuffer {
         this.maxSphericalHarmonicsCoeff = header.maxSphericalHarmonicsCoeff;
 
         this.sections = SplatBuffer.parseSectionHeaders(header, this.bufferData, SplatBuffer.HeaderSizeBytes, secLoadedCountsToMax);
+        console.log("SECTIONS", this.sections)
 
         this.linkBufferArrays();
         this.buildMaps();
