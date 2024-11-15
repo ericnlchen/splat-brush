@@ -1059,9 +1059,13 @@ export class Viewer {
             } else if (format === SceneFormat.KSplat) {
                 return KSplatLoader.loadFromURL(path, onProgress, progressiveBuild, onSectionBuilt);
             } else if (format === SceneFormat.Ply) {
-                return PlyLoader.loadFromURL(path, onProgress, progressiveBuild, onSectionBuilt,
+                const result = PlyLoader.loadFromURL(path, onProgress, progressiveBuild, onSectionBuilt,
                                              splatAlphaRemovalThreshold, this.inMemoryCompressionLevel,
                                              optimizeSplatData, this.sphericalHarmonicsDegree);
+                (async () => {
+                    console.log("ply loader result", await result);
+                })();
+                return result;
             }
         } catch (e) {
             if (e instanceof DirectLoadError) {
@@ -1087,6 +1091,8 @@ export class Viewer {
         return function(splatBuffers, splatBufferOptions = [], finalBuild = true, showLoadingUI = true,
                         showLoadingUIForSplatTreeBuild = true, replaceExisting = false,
                         enableRenderBeforeFirstSort = false, preserveVisibleRegion = true) {
+
+            console.log("running addSplatBuffers", splatBuffers, splatBufferOptions, finalBuild);
 
             if (this.isDisposingOrDisposed()) return Promise.resolve();
 

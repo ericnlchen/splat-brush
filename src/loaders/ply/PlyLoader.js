@@ -35,6 +35,9 @@ function finalize(splatData, optimizeSplatData, minimumAlpha, compressionLevel, 
         const splatBufferGenerator = SplatBufferGenerator.getStandardGenerator(minimumAlpha, compressionLevel,
                                                                                sectionSize, sceneCenter,
                                                                                blockSize, bucketSize);
+        console.log(minimumAlpha, compressionLevel,
+            sectionSize, sceneCenter,
+            blockSize, bucketSize);
         return splatBufferGenerator.generateFromUncompressedSplatArray(splatData);
     } else {
         return SplatBuffer.generateFromUncompressedSplatArrays([splatData], minimumAlpha, 0, new THREE.Vector3());

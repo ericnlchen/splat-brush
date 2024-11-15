@@ -15,6 +15,7 @@ export class SplatBufferGenerator {
     }
 
     generateFromUncompressedSplatArray(splatArray) {
+        console.log("HI???")
         const partitionResults = this.splatPartitioner.partitionUncompressedSplatArray(splatArray);
         return SplatBuffer.generateFromUncompressedSplatArrays(partitionResults.splatArrays,
                                                                this.alphaRemovalThreshold, this.compressionLevel,
