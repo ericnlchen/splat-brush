@@ -6,3 +6,5 @@ build-ts/*
 !build-ts/index.html
 build-ts/assets/data
 !build-ts/assets
+
+.DS_Store
