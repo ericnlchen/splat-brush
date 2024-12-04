@@ -7,4 +7,6 @@ build-ts/*
 build-ts/assets/data
 !build-ts/assets
 
+*.ply
+
 .DS_Store
