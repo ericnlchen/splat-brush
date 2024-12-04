@@ -1,6 +1,7 @@
 import { SceneRevealMode, SplatBuffer, SplatBufferGenerator, Viewer } from './index.js';
 import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
 import throttle from '../node_modules/lodash/throttle.js';
+import * as THREE from 'three';
 
 export class SplatBrush {
     strokeSplatArray: UncompressedSplatArray;
@@ -42,17 +43,27 @@ export class SplatBrush {
 
     screenToWorld(mX: number, mY: number) {
 
-        return [mX, mY, 0] //TODO
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        // To normalized device coords (-1 to +1)
+        pointer.x = (mX / window.innerWidth) * 2 - 1;
+        pointer.y = -(mY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, this.viewer.camera);
+        const ray = raycaster.ray;
+
+        // Draw on an orthogonal plane at a constant distance from the camera
+        const worldPt = ray.origin.addScaledVector(ray.direction, 10).toArray()
+
+        return worldPt
     }
 
     // On mousemove, replace existing buffer with stroke buffer
     handleMouseMove = (e: any) => {
         if (e.metaKey) {
 
-            let mX = 2 * e.clientX / window.innerWidth;
-            let mY = 2 * e.clientY / window.innerHeight;
-
-            let [worldX, worldY, worldZ] = this.screenToWorld(mX, mY);
+            let [worldX, worldY, worldZ] = this.screenToWorld(e.clientX, e.clientY);
 
             this.addStamp(worldX, worldY, worldZ);
         
