@@ -1,6 +1,8 @@
 import { PlyParser, SceneRevealMode, SplatBuffer, SplatBufferGenerator, Viewer } from './index.js';
 import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
+// @ts-ignore
 import throttle from '../node_modules/lodash/throttle.js';
+// @ts-ignore
 import * as THREE from 'three';
 
 // Config object to pass to splatBrush
@@ -21,7 +23,7 @@ export class SplatBrush {
         this.strokeBuffer = new SplatBuffer();
         this.viewer = viewer;
         this.config = config;
-        this.throttleRate = 50;
+        this.throttleRate = 50; // ms
         this.raycaster = new THREE.Raycaster();
         document.addEventListener('mousemove', throttle(this.handleMouseMove, this.throttleRate));
     }
@@ -60,7 +62,7 @@ export class SplatBrush {
         }
         else {
             // Create a stamp from random splats
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 100; i++) {
                 this.strokeArray.addSplatFromComonents(
                     // x, y, z
                     worldX + 0.5*(Math.random() - 0.5), worldY + 0.5*(Math.random() - 0.5), worldZ + 0.5*(Math.random() - 0.5), 
