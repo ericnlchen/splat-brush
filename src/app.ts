@@ -1,8 +1,10 @@
-import { SceneRevealMode, Viewer } from './index.js';
-import { SplatBrush } from './SplatBrush'
+import { SceneRevealMode, Viewer, PlyParser } from './index.js';
+import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
+import { SplatBrush, SplatBrushConfig } from './SplatBrush'
 
 console.log("HI!")
 
+// Start splat viewer
 const viewer = new Viewer({
     'cameraUp': [0.01933, -0.75830, -0.65161],
     'initialCameraPosition': [1.54163, 2.68515, -6.37228],
@@ -11,10 +13,50 @@ const viewer = new Viewer({
     'dynamicScene': true,
     'sceneRevealMode': SceneRevealMode.Instant
 });
-
 viewer.start();
 
-const splatBrush = new SplatBrush(viewer);
+let splatBrushConfig : SplatBrushConfig = {
+    selectedStampArray: new UncompressedSplatArray()
+};
+
+// Get the user's selected file
+const filePicker = document.getElementById("file-picker");
+if (filePicker && filePicker instanceof HTMLInputElement) {
+    filePicker.addEventListener("change", handlePickFile, false);
+}
+async function handlePickFile(this : HTMLInputElement) {
+    const files = this.files;
+    if (files) {
+        const selectedFile = files[0];
+        const result = await readFileToArrayBuffer(selectedFile);
+        if (result && result instanceof ArrayBuffer) {
+            const arrayBuffer : ArrayBuffer = result;
+            // Load the scene into a splat array
+            let stampArray = PlyParser.parseToUncompressedSplatArray(arrayBuffer, undefined);
+            if (stampArray) {
+                splatBrushConfig.selectedStampArray = stampArray;
+            }
+            else {
+                console.log('Error: failed parseToUncompressedSplatArray.')
+            }
+            console.log(stampArray);
+        }
+    }
+}
+async function readFileToArrayBuffer(file : File) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result);
+      };
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+}
+
+const splatBrush = new SplatBrush(viewer, splatBrushConfig);
 
 // const viewer = new Viewer({
 //     'cameraUp': [0.01933, -0.75830, -0.65161],

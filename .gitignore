@@ -9,3 +9,4 @@ build-ts/assets/data
 
 .DS_Store
 cert
+*.ply
