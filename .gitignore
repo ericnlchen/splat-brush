@@ -8,3 +8,4 @@ build-ts/assets/data
 !build-ts/assets
 
 .DS_Store
+cert
