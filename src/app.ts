@@ -1,6 +1,8 @@
-import { SceneRevealMode, Viewer, PlyParser } from './index.js';
+import { SceneRevealMode, Viewer, PlyParser, WebXRMode, SplatBufferGenerator } from './index.js';
 import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
 import { SplatBrush, SplatBrushConfig } from './SplatBrush'
+import * as THREE from 'three';
+import { set_custom_update_injection } from './Viewer.js';
 
 console.log("HI!")
 
@@ -9,11 +11,70 @@ const viewer = new Viewer({
     'cameraUp': [0.01933, -0.75830, -0.65161],
     'initialCameraPosition': [1.54163, 2.68515, -6.37228],
     'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
-    'sphericalHarmonicsDegree': 2,
-    'dynamicScene': true,
-    'sceneRevealMode': SceneRevealMode.Instant
+    // 'sphericalHarmonicsDegree': 2, 
+    // 'dynamicScene': true, # this breaks seeing the splats in VR for some reason
+    'sceneRevealMode': SceneRevealMode.Instant,
+
+    'webXRMode': WebXRMode.AR
 });
 viewer.start();
+
+const scene = viewer.sceneHelper!.threeScene;
+const renderer = viewer.renderer;
+const cursor = new THREE.Vector3();
+
+setTimeout(() => {
+    let is_selecting = false;
+
+    function onSelectStart(this: any) {
+        this.updateMatrixWorld( true );
+        const pivot = this.getObjectByName('pivot');
+        cursor.setFromMatrixPosition(pivot.matrixWorld);
+
+        is_selecting = true;
+    }
+
+    function onSelectEnd() {
+        is_selecting = false;
+    }
+    
+    console.log(renderer.xr.enabled, "HUH??");
+    const controller1 = renderer.xr.getController( 0 );
+    controller1.addEventListener( 'selectstart', onSelectStart );
+    controller1.addEventListener( 'selectend', onSelectEnd );
+    scene.add(controller1);
+    
+    const controller2 = renderer.xr.getController( 1 );
+    controller2.addEventListener( 'selectstart', onSelectStart );
+    controller2.addEventListener( 'selectend', onSelectEnd );
+    scene.add(controller2);
+
+    const pivot = new THREE.Mesh( new THREE.IcosahedronGeometry( 0.01, 3 ) );
+    pivot.name = 'pivot';
+    pivot.position.z = -0.05;
+
+    const group = new THREE.Group();
+    group.add( pivot );
+    controller1.add( group.clone() );
+    controller2.add( group.clone() );
+
+    function handleController(controller: any) {
+        const pivot = controller.getObjectByName('pivot');
+        cursor.setFromMatrixPosition(pivot.matrixWorld);
+    }
+
+    set_custom_update_injection(() => {
+        handleController(controller1);
+        handleController(controller2);
+
+        if(is_selecting){
+            splatBrush.addStamp(cursor.x, cursor.y, cursor.z);
+            splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(splatBrush.strokeArray);
+            splatBrush.viewer.addSplatBuffers([splatBrush.strokeBuffer], [], false, false, false, true);
+        }
+    });
+    
+}, 500);
 
 let splatBrushConfig : SplatBrushConfig = {
     selectedStampArray: new UncompressedSplatArray()
