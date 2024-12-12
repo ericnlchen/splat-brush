@@ -92,6 +92,10 @@ def extract_ring_2(path):
         exit(1)
 
     cv2.imwrite(f'{path}.temp.png', masked_image)
+    
+    binary_mask = np.any(masked_image != [255, 255, 255], axis=-1).astype(np.uint8)
+    binary_mask = binary_mask * 255
+    cv2.imwrite(f'{path}.mask_temp.png', binary_mask)
 
 extract_ring_2(args[1])
 exit(0)

@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-const root_path_of_mvs = 'C:/Users/kauhe/Data2024/visual-computing/MVSGaussian';
+const root_path_of_mvs = 'C:/Users/tzz53/Documents/MVSGaussian';
 
 const video_names = fs.readdirSync('./vid-batch');
 const video_paths = video_names.map(p => `./vid-batch/${p}`);
