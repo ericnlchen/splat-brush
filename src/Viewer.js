@@ -33,6 +33,9 @@ const FOCUS_MARKER_FADE_IN_SPEED = 10.0;
 const FOCUS_MARKER_FADE_OUT_SPEED = 2.5;
 const CONSECUTIVE_RENDERED_FRAMES_FOR_FPS_CALCULATION = 60;
 
+let custom_callback = () => {};
+export const set_custom_update_injection = f => custom_callback = f;
+
 /**
  * Viewer: Manages the rendering of splat scenes. Manages an instance of SplatMesh as well as a web worker
  * that performs the sort for its splats.
@@ -1612,6 +1615,8 @@ export class Viewer {
     }();
 
     update(renderer, camera) {
+        custom_callback();
+
         if (this.dropInMode) this.updateForDropInMode(renderer, camera);
 
         if (!this.initialized || !this.splatRenderReady || this.isDisposingOrDisposed()) return;

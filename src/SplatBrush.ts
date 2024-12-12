@@ -62,13 +62,15 @@ export class SplatBrush {
         }
         else {
             // Create a stamp from random splats
-            for (let i = 0; i < 100; i++) {
+            const jitter_radius = 0.02;
+            const scale = 0.02;
+            for (let i = 0; i < 2; i++) {
                 this.strokeArray.addSplatFromComonents(
                     // x, y, z
-                    worldX + 0.5*(Math.random() - 0.5), worldY + 0.5*(Math.random() - 0.5), worldZ + 0.5*(Math.random() - 0.5), 
+                    worldX + jitter_radius*2*(Math.random() - 0.5), worldY + jitter_radius*2*(Math.random() - 0.5), worldZ + jitter_radius*2*(Math.random() - 0.5), 
             
                     // s0, s1, s2
-                    0.05, 0.05, 0.05,      
+                    scale, scale, scale,      
             
                     // quaternion r0, r1, r2, r3
                     Math.random(), Math.random(), Math.random(), Math.random(),                 

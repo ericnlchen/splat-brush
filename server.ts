@@ -1,24 +1,27 @@
-import * as http from 'http';
+import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 
 let baseDirectory = './build-ts/';
-let port = 8080;
-let host = 'localhost';
+let port = 8443;
+// let host = 'localhost';
+let host = '108.61.23.254';
 let lasttRequesTime = performance.now() / 1000;
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+let options = {
+  key: fs.readFileSync('./cert/key.pem'),
+  cert: fs.readFileSync('./cert/cert.pem')
+};
 
-http
-  .createServer( async function (request, response) {
+https.createServer(options, async (request, response) => {
 
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Access-Control-Allow-Methods", "GET");
     response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    response.setHeader("Cross-Origin-Resource-Policy", "same-site");
     response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
+    console.log("ACCESS!")
     let filePath = baseDirectory + request.url;
 
     const extname = path.extname(filePath);
@@ -104,7 +107,6 @@ http
     });
 
     lasttRequesTime = requestTime;
-  })
-  .listen(port, host);
+}).listen(port, host);
 
 console.log("Server running at " + host + ':' + port);
