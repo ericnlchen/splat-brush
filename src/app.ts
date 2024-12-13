@@ -91,25 +91,6 @@ const filePicker = document.getElementById("file-picker");
 if (filePicker && filePicker instanceof HTMLInputElement) {
     filePicker.addEventListener("change", handlePickFile, false);
 }
-async function handlePickFile(this : HTMLInputElement) {
-    const files = this.files;
-    if (files) {
-        const selectedFile = files[0];
-        const result = await readFileToArrayBuffer(selectedFile);
-        if (result && result instanceof ArrayBuffer) {
-            const arrayBuffer : ArrayBuffer = result;
-            // Load the scene into a splat array
-            let stampArray = PlyParser.parseToUncompressedSplatArray(arrayBuffer, undefined);
-            if (stampArray) {
-                splatBrushConfig.selectedStampArray = stampArray;
-            }
-            else {
-                console.log('Error: failed parseToUncompressedSplatArray.')
-            }
-            console.log(stampArray);
-        }
-    }
-}
 async function readFileToArrayBuffer(file : File) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -121,6 +102,27 @@ async function readFileToArrayBuffer(file : File) {
       };
       reader.readAsArrayBuffer(file);
     });
+}
+
+async function handlePickFile(this : HTMLInputElement) {
+    const files = this.files;
+    if (files) {
+        const selectedFile = files[0];
+        const result = await readFileToArrayBuffer(selectedFile);
+        if (result && result instanceof ArrayBuffer) {
+            const arrayBuffer : ArrayBuffer = result;
+            // Load the scene into a splat array
+            let stampArray = PlyParser.parseToUncompressedSplatArray(arrayBuffer, undefined);
+            if (stampArray) {
+                splatBrushConfig.selectedStampArray = stampArray;
+                splatBrush.loadBrush(stampArray);
+            }
+            else {
+                console.log('Error: failed parseToUncompressedSplatArray.')
+            }
+            console.log(stampArray);
+        }
+    }
 }
 
 const splatBrush = new SplatBrush(viewer, splatBrushConfig);

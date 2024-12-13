@@ -26,8 +26,13 @@ export class SplatBrush {
     config: SplatBrushConfig;
     throttleRate: number;
     raycaster: THREE.Raycaster;
-
     is_drawing: boolean = false;
+
+    brush_og_arrays: UncompressedSplatArray[] = [];
+    brush_num_subsamples = 8;
+    brush_subsample_size = 512;
+    brush_subsample_arrays: number[][][][] = []; // [slot][subsample][splat index][params]
+    selected_brush_slot = -1;
 
     constructor(viewer : Viewer, config : SplatBrushConfig) {
         this.strokeArray = new UncompressedSplatArray(2);
@@ -49,13 +54,39 @@ export class SplatBrush {
         });
     }
 
+    loadBrush(array: UncompressedSplatArray){
+        this.brush_og_arrays.push(array);
+        const current_brush_subsample_arrays = [];
+
+        for(let n = 0; n < this.brush_num_subsamples; n++){
+            let subsample_splats: number[][] = [];
+            for (let s = 0; s < this.brush_subsample_size; s++) {
+                let i = Math.random() * array.splatCount | 0;
+                let [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, ...rest] = array.splats[i];
+    
+                subsample_splats.push([
+                    x, y, z,
+                    scale0, scale1, scale2,
+                    rot0, rot1, rot2, rot3,
+                    r, g, b,
+                    opacity,
+                    ...rest
+                ]);
+            }
+            current_brush_subsample_arrays.push(subsample_splats);
+        }
+        this.brush_subsample_arrays.push(current_brush_subsample_arrays);
+    }
+
     // Update stroke buffer on mousemove
     addStamp(worldX: number, worldY: number, worldZ: number) {
+        if(this.selected_brush_slot !== -1){
+            let subsamples = this.brush_subsample_arrays[this.selected_brush_slot];
+            let chosen_subsample = subsamples[Math.random() * subsamples.length | 0];
+            console.log(chosen_subsample.length)
 
-        if (this.config.selectedStampArray.splatCount > 0) {
-            // Add the loaded stamp splats
-            for (let i = 0; i < this.config.selectedStampArray.splatCount; i++) {
-                let [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, ...rest] = this.config.selectedStampArray.splats[i];
+            for (let i = 0; i < chosen_subsample.length; i++) {
+                let [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, ...rest] = chosen_subsample[i];
                 
                 // Scale down
                 const stampScale = 0.2;
@@ -78,7 +109,7 @@ export class SplatBrush {
                     r, g, b,
                     opacity,
                     ...rest
-                ])
+                ]);
             }
         }
         else {
@@ -89,16 +120,12 @@ export class SplatBrush {
                 this.strokeArray.addSplat([
                     // x, y, z
                     worldX + jitter_radius*2*(Math.random() - 0.5), worldY + jitter_radius*2*(Math.random() - 0.5), worldZ + jitter_radius*2*(Math.random() - 0.5), 
-            
                     // s0, s1, s2
                     scale, scale, scale,      
-            
                     // quaternion r0, r1, r2, r3
                     Math.random(), Math.random(), Math.random(), Math.random(),                 
-            
                     // r, g, b
                     Math.random() * 255 | 0, Math.random() * 255 | 0, Math.random() * 255 | 0, 
-            
                     // opacity
                     150,                                                                        
                     ...new Array(24).fill(0)
@@ -139,6 +166,18 @@ export class SplatBrush {
             set_waiting_for_render(true);
 
             let [worldX, worldY, worldZ] = this.screenToWorld(e.clientX, e.clientY);
+
+            const xrcam_position = new THREE.Vector3();
+            xrcam_position.setFromMatrixPosition(this.viewer.camera.matrixWorld);
+            const brush_position = new THREE.Vector3(worldX, worldY, worldZ);
+            const look_vector = brush_position.sub(xrcam_position).normalize();
+            const up_vector = new THREE.Vector3(0, 1, 0).normalize();
+            const rot_axis = look_vector.cross(up_vector);
+
+            // const 
+
+
+            console.log(look_vector)
 
             this.addStamp(worldX, worldY, worldZ);
             this.strokeBuffer = generator.generateFromUncompressedSplatArray(this.strokeArray);
