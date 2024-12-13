@@ -76,6 +76,7 @@
         "build/gaussian-splats-3d.module.js.map"
     ],
     "dependencies": {
+        "three-mesh-ui": "^6.5.4",
         "ts-loader": "^9.5.1"
     }
 }

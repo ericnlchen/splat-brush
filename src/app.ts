@@ -1,21 +1,27 @@
 import { SceneRevealMode, Viewer, PlyParser, WebXRMode, SplatBufferGenerator } from './index.js';
 import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
 import { SplatBrush, SplatBrushConfig } from './SplatBrush'
+// @ts-ignore
 import * as THREE from 'three';
 import { set_custom_update_injection } from './Viewer.js';
+import { SplatUI } from './SplatUI.js'
 
 console.log("HI!")
 
+// UI
+const threeScene = new THREE.Scene();
+const UI = new SplatUI(threeScene);
+
 // Start splat viewer
 const viewer = new Viewer({
-    'cameraUp': [0.01933, -0.75830, -0.65161],
-    'initialCameraPosition': [1.54163, 2.68515, -6.37228],
-    'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
+    'cameraUp': [0, 1, 0],
+    'initialCameraPosition': [0, 2, 5],
+    'initialCameraLookAt': [0, 0, 0],
     // 'sphericalHarmonicsDegree': 2, 
     // 'dynamicScene': true, # this breaks seeing the splats in VR for some reason
     'sceneRevealMode': SceneRevealMode.Instant,
-
-    'webXRMode': WebXRMode.AR
+    'threeScene': threeScene,
+    // 'webXRMode': WebXRMode.AR
 });
 viewer.start();
 
