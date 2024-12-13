@@ -16,6 +16,9 @@ export class SplatUI {
 
         this.makeUIPanel();
         setTimeout(() => {this.init()}, 500);
+
+        this.onSelectStart = this.onSelectStart.bind(this);
+        this.onSelectEnd = this.onSelectEnd.bind(this);
     }
 
     onSelectStart(controller) {
@@ -39,13 +42,13 @@ export class SplatUI {
 
         console.log(this.renderer.xr.enabled, "HUH??");
         const controller1 = this.renderer.xr.getController( 0 );
-        controller1.addEventListener( 'selectstart', this.onSelectStart );
-        controller1.addEventListener( 'selectend', this.onSelectEnd );
+        controller1.addEventListener( 'selectstart', () => this.onSelectStart(controller1) );
+        controller1.addEventListener( 'selectend', () => this.onSelectEnd(controller1));
         this.scene.add(controller1);
         
         const controller2 = this.renderer.xr.getController( 1 );
-        controller2.addEventListener( 'selectstart', this.onSelectStart );
-        controller2.addEventListener( 'selectend', this.onSelectEnd );
+        controller2.addEventListener( 'selectstart', () => this.onSelectStart(controller2) );
+        controller2.addEventListener( 'selectend', () => this.onSelectEnd(controller2) );
         this.scene.add(controller2);
     
         const pivot = new THREE.Mesh( new THREE.IcosahedronGeometry( 0.01, 3 ) );
@@ -56,12 +59,12 @@ export class SplatUI {
         group.add( pivot );
         controller1.add( group.clone() );
         controller2.add( group.clone() );
-    
+
         set_custom_update_injection(() => {
-            console.log('injection run')
             this.handleController(controller1);
             this.handleController(controller2);
-    
+            this.handlePanelMove();
+
             if (this.is_selecting) {
                 this.splatBrush.addStamp(this.cursor.x, this.cursor.y, this.cursor.z);
                 this.splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.splatBrush.strokeArray);
@@ -70,6 +73,12 @@ export class SplatUI {
         });
 
         console.log('done with init')
+
+        setTimeout(() => {
+            this.splatBrush.addStamp(10, 10, 10);
+                this.splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.splatBrush.strokeArray);
+                this.splatBrush.viewer.addSplatBuffers([this.splatBrush.strokeBuffer], [], false, false, false, true);
+        }, 1000);
     }
 
     makeUIPanel() {
@@ -115,7 +124,7 @@ export class SplatUI {
         this.scene.add( this.container );
     };
     
-    animate = () => {
+    handlePanelMove = () => {
         const lookVector = new THREE.Vector3();
         const position = new THREE.Vector3();
     
@@ -127,9 +136,9 @@ export class SplatUI {
         this.container.position.copy(
             position.clone().add(lookVector.clone().multiplyScalar(5))
         );
-        requestAnimationFrame(this.animate);
+        // requestAnimationFrame(this.animate);
         ThreeMeshUI.update();
-        this.viewer.renderer.render(this.scene, this.viewer.camera);
+        // this.viewer.renderer.render(this.scene, this.viewer.camera);
     };
     
 }
