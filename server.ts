@@ -12,8 +12,8 @@ let host = HOST_LOCAL ? 'localhost' : '108.61.23.254';
 let lasttRequesTime = performance.now() / 1000;
 
 let options = {
-  key: HOST_LOCAL ? '' : fs.readFileSync('./cert/key.pem'),
-  cert: HOST_LOCAL ? '' : fs.readFileSync('./cert/cert.pem')
+  key: HOST_LOCAL ? fs.readFileSync('./cert/localhost.key') : fs.readFileSync('./cert/key.pem'),
+  cert: HOST_LOCAL ? fs.readFileSync('./cert/localhost.crt') : fs.readFileSync('./cert/cert.pem')
 };
 
 const serve = async (request, response) => {
@@ -111,10 +111,10 @@ const serve = async (request, response) => {
   lasttRequesTime = requestTime;
 }
 
-if(HOST_LOCAL){
-  http.createServer(serve).listen(port, host);
-} else {
+// if(HOST_LOCAL){
+//   http.createServer(serve).listen(port, host);
+// } else {
   https.createServer(options, serve).listen(port, host);
-}
+// }
 
 console.log("Server running at " + host + ':' + port);

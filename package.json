@@ -10,7 +10,6 @@
     "main": "build/gaussian-splats-3d.umd.cjs",
     "author": "Mark Kellogg",
     "license": "MIT",
-    
     "scripts": {
         "build-demo": "mkdir -p ./build/demo && cp -r ./demo ./build/ && cp ./node_modules/three/build/three.module.js ./build/demo/lib/three.module.js",
         "build-library": "npx rollup -c && mkdir -p ./build/demo/lib && cp ./build/gaussian-splats-3d.module.* ./build/demo/lib/",
@@ -55,6 +54,7 @@
         "@babel/preset-env": "7.22.10",
         "@rollup/plugin-terser": "0.4.4",
         "@rollup/pluginutils": "5.0.5",
+        "@types/three": "^0.170.0",
         "babel-loader": "9.1.3",
         "eslint": "8.47.0",
         "eslint-config-google": "0.14.0",
