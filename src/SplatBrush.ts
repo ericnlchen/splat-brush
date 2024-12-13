@@ -177,7 +177,7 @@ export class SplatBrush {
             // const 
 
 
-            console.log(look_vector)
+            // console.log(look_vector)
 
             this.addStamp(worldX, worldY, worldZ);
             this.strokeBuffer = generator.generateFromUncompressedSplatArray(this.strokeArray);
