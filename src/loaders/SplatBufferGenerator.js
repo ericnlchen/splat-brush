@@ -15,12 +15,11 @@ export class SplatBufferGenerator {
     }
 
     generateFromUncompressedSplatArray(splatArray) {
-        console.log("HI???")
-        const partitionResults = this.splatPartitioner.partitionUncompressedSplatArray(splatArray);
-        return SplatBuffer.generateFromUncompressedSplatArrays(partitionResults.splatArrays,
-                                                               this.alphaRemovalThreshold, this.compressionLevel,
-                                                               this.sceneCenter, this.blockSize, this.bucketSize,
-                                                               partitionResults.parameters);
+        // const partitionResults = this.splatPartitioner.partitionUncompressedSplatArray(splatArray);
+        return SplatBuffer.generateFromUncompressedSplatArrays([splatArray],
+            this.alphaRemovalThreshold, this.compressionLevel,
+            this.sceneCenter, this.blockSize, this.bucketSize,
+            {});
     }
 
     static getStandardGenerator(alphaRemovalThreshold = 1, compressionLevel = 1, sectionSize = 0, sceneCenter = new THREE.Vector3(),

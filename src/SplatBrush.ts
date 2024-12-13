@@ -4,11 +4,20 @@ import { UncompressedSplatArray } from './loaders/UncompressedSplatArray.js';
 import throttle from '../node_modules/lodash/throttle.js';
 // @ts-ignore
 import * as THREE from 'three';
+import { get_waiting_for_render, set_waiting_for_render } from './Viewer.js';
 
 // Config object to pass to splatBrush
 export interface SplatBrushConfig {
     selectedStampArray : UncompressedSplatArray
 }
+
+const generator = SplatBufferGenerator.getStandardGenerator(1, 0);
+let num_strokes = 0;
+let new_stroke_flag = false;
+export const get_num_strokes = () => num_strokes;
+export const get_new_stroke_flag = () => new_stroke_flag;
+export const set_new_stroke_flag = (v: boolean) => new_stroke_flag = v;
+ 
  
 export class SplatBrush {
     strokeArray: UncompressedSplatArray;
@@ -18,6 +27,8 @@ export class SplatBrush {
     throttleRate: number;
     raycaster: THREE.Raycaster;
 
+    is_drawing: boolean = false;
+
     constructor(viewer : Viewer, config : SplatBrushConfig) {
         this.strokeArray = new UncompressedSplatArray(2);
         this.strokeBuffer = new SplatBuffer();
@@ -26,6 +37,16 @@ export class SplatBrush {
         this.throttleRate = 50; // ms
         this.raycaster = new THREE.Raycaster();
         document.addEventListener('mousemove', throttle(this.handleMouseMove, this.throttleRate));
+        document.addEventListener('keydown', (key) => {
+            if(key.altKey){
+                this.is_drawing = true;
+                this.start_stroke();
+            }
+        });
+        document.addEventListener('keyup', (key) => {
+            this.is_drawing = false;
+            this.end_stroke();
+        });
     }
 
     // Update stroke buffer on mousemove
@@ -50,22 +71,22 @@ export class SplatBrush {
                 y = y + worldY;
                 z = z + worldZ;
 
-                this.strokeArray.addSplatFromComonents(
+                this.strokeArray.addSplat([
                     x, y, z,
                     scale0, scale1, scale2,
                     rot0, rot1, rot2, rot3,
                     r, g, b,
                     opacity,
                     ...rest
-                )
+                ])
             }
         }
         else {
             // Create a stamp from random splats
-            const jitter_radius = 0.02;
+            const jitter_radius = 0.2;
             const scale = 0.02;
-            for (let i = 0; i < 2; i++) {
-                this.strokeArray.addSplatFromComonents(
+            for (let i = 0; i < 200; i++) {
+                this.strokeArray.addSplat([
                     // x, y, z
                     worldX + jitter_radius*2*(Math.random() - 0.5), worldY + jitter_radius*2*(Math.random() - 0.5), worldZ + jitter_radius*2*(Math.random() - 0.5), 
             
@@ -81,7 +102,7 @@ export class SplatBrush {
                     // opacity
                     150,                                                                        
                     ...new Array(24).fill(0)
-                )
+                ])
             }
         }
     }
@@ -102,14 +123,25 @@ export class SplatBrush {
         return worldPt
     }
 
+    start_stroke(){
+        this.strokeArray = new UncompressedSplatArray(2);
+        new_stroke_flag = true;
+    }
+
+    end_stroke(){
+        num_strokes += 1;
+    }
+
     // On mousemove, replace existing buffer with stroke buffer
     handleMouseMove = (e: any) => {
-        if (e.metaKey) {
+        if (this.is_drawing) {
+            if(get_waiting_for_render() === true) return;
+            set_waiting_for_render(true);
+
             let [worldX, worldY, worldZ] = this.screenToWorld(e.clientX, e.clientY);
 
             this.addStamp(worldX, worldY, worldZ);
-        
-            this.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.strokeArray);
+            this.strokeBuffer = generator.generateFromUncompressedSplatArray(this.strokeArray);
             this.viewer.addSplatBuffers([this.strokeBuffer], [], false, false, false, true);
         }
     }

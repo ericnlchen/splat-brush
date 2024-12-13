@@ -36,6 +36,11 @@ const CONSECUTIVE_RENDERED_FRAMES_FOR_FPS_CALCULATION = 60;
 let custom_callback = () => {};
 export const set_custom_update_injection = f => custom_callback = f;
 
+import { get_new_stroke_flag, get_num_strokes, set_new_stroke_flag } from './SplatBrush';
+let waiting_for_render = false;
+export const set_waiting_for_render = (v) => waiting_for_render = v;
+export const get_waiting_for_render = () => waiting_for_render;
+
 /**
  * Viewer: Manages the rendering of splat scenes. Manages an instance of SplatMesh as well as a web worker
  * that performs the sort for its splats.
@@ -812,7 +817,6 @@ export class Viewer {
                 'scale': options.scale,
                 'splatAlphaRemovalThreshold': options.splatAlphaRemovalThreshold,
             };
-            console.log(splatBuffer, addSplatBufferOptions)
             return this.addSplatBuffers([splatBuffer], [addSplatBufferOptions],
                                          finalBuild, firstBuild && showLoadingUI, showLoadingUI,
                                          progressiveLoad, progressiveLoad).then(() => {
@@ -1192,13 +1196,26 @@ export class Viewer {
 
         return function(splatBuffers, splatBufferOptions, finalBuild = true, showLoadingUIForSplatTreeBuild = false,
                         replaceExisting = false, preserveVisibleRegion = true) {
+
+            const temp_time = new Date().getTime();
             if (this.isDisposingOrDisposed()) return;
             let allSplatBuffers = [];
             let allSplatBufferOptions = [];
-            if (!replaceExisting) {
+
+            const new_stroke = get_new_stroke_flag();
+            set_new_stroke_flag(false);
+            if(new_stroke){
+                // keep old logic of no replace old, only add (so we get the new stroke in with later .push())
                 allSplatBuffers = this.splatMesh.scenes.map((scene) => scene.splatBuffer) || [];
                 allSplatBufferOptions = this.splatMesh.sceneOptions ? this.splatMesh.sceneOptions.map((sceneOptions) => sceneOptions) : [];
+            } else {
+                // else no replace old EXCEPT the last stroke so we effectively replace it with later .push()
+                allSplatBuffers = this.splatMesh.scenes.map((scene) => scene.splatBuffer) || [];
+                allSplatBufferOptions = this.splatMesh.sceneOptions ? this.splatMesh.sceneOptions.map((sceneOptions) => sceneOptions) : [];
+                allSplatBuffers.pop();
+                allSplatBufferOptions.pop();
             }
+
             allSplatBuffers.push(...splatBuffers);
             allSplatBufferOptions.push(...splatBufferOptions);
             if (this.renderer) this.splatMesh.setRenderer(this.renderer);
@@ -1533,6 +1550,7 @@ export class Viewer {
     }
 
     selfDrivenUpdate() {
+        console.log('update self')
         if (this.selfDrivenMode && !this.webXRMode) {
             this.requestFrameId = requestAnimationFrame(this.selfDrivenUpdateFunc);
         }
@@ -1591,7 +1609,6 @@ export class Viewer {
     render = function() {
 
         return function() {
-            if (!this.initialized || !this.splatRenderReady || this.isDisposingOrDisposed()) return;
 
             const hasRenderables = (threeScene) => {
                 for (let child of threeScene.children) {
@@ -1599,7 +1616,6 @@ export class Viewer {
                 }
                 return false;
             };
-
             const savedAuoClear = this.renderer.autoClear;
             if (hasRenderables(this.threeScene)) {
                 this.renderer.render(this.threeScene, this.camera);
@@ -1607,6 +1623,7 @@ export class Viewer {
             }
             this.renderer.render(this.splatMesh, this.camera);
             this.renderer.autoClear = false;
+            set_waiting_for_render(false); // set flag for handlemousemove to wait for rendering
             if (this.sceneHelper.getFocusMarkerOpacity() > 0.0) this.renderer.render(this.sceneHelper.focusMarker, this.camera);
             if (this.showControlPlane) this.renderer.render(this.sceneHelper.controlPlane, this.camera);
             this.renderer.autoClear = savedAuoClear;
@@ -1616,6 +1633,7 @@ export class Viewer {
 
     update(renderer, camera) {
         custom_callback();
+        // number of three js objects constant
 
         if (this.dropInMode) this.updateForDropInMode(renderer, camera);
 

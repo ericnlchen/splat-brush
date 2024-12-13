@@ -1187,20 +1187,20 @@ export class SplatBuffer {
         let minSphericalHarmonicsCoeff;
         let maxSphericalHarmonicsCoeff;
 
-        for (let sa = 0; sa < splatArrays.length; sa ++) {
-            const splatArray = splatArrays[sa];
-            for (let i = 0; i < splatArray.splats.length; i++) {
-                const splat = splatArray.splats[i];
-                for (let sc = UncompressedSplatArray.OFFSET.FRC0; sc < UncompressedSplatArray.OFFSET.FRC23 && sc < splat.length; sc++) {
-                    if (!minSphericalHarmonicsCoeff || splat[sc] < minSphericalHarmonicsCoeff) {
-                        minSphericalHarmonicsCoeff = splat[sc];
-                    }
-                    if (!maxSphericalHarmonicsCoeff || splat[sc] > maxSphericalHarmonicsCoeff) {
-                        maxSphericalHarmonicsCoeff = splat[sc];
-                    }
-                }
-            }
-        }
+        // for (let sa = 0; sa < splatArrays.length; sa ++) {
+        //     const splatArray = splatArrays[sa];
+        //     for (let i = 0; i < splatArray.splats.length; i++) {
+        //         const splat = splatArray.splats[i];
+        //         for (let sc = UncompressedSplatArray.OFFSET.FRC0; sc < UncompressedSplatArray.OFFSET.FRC23 && sc < splat.length; sc++) {
+        //             if (!minSphericalHarmonicsCoeff || splat[sc] < minSphericalHarmonicsCoeff) {
+        //                 minSphericalHarmonicsCoeff = splat[sc];
+        //             }
+        //             if (!maxSphericalHarmonicsCoeff || splat[sc] > maxSphericalHarmonicsCoeff) {
+        //                 maxSphericalHarmonicsCoeff = splat[sc];
+        //             }
+        //         }
+        //     }
+        // }
 
         minSphericalHarmonicsCoeff = minSphericalHarmonicsCoeff || -DefaultSphericalHarmonics8BitCompressionHalfRange;
         maxSphericalHarmonicsCoeff = maxSphericalHarmonicsCoeff || DefaultSphericalHarmonics8BitCompressionHalfRange;

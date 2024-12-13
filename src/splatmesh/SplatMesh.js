@@ -40,6 +40,8 @@ const VISIBLE_REGION_EXPANSION_DELTA = 1;
 // but for now the work-around is to split the spherical harmonics into three textures (one for each color channel).
 const MAX_TEXTURE_TEXELS = 16777216;
 
+const old_buffer_dict = {};
+
 /**
  * SplatMesh: Container for one or more splat scenes, abstracting them into a single unified container for
  * splat data. Additionally contains data structures and code to make the splat data renderable as a Three.js mesh.
@@ -301,7 +303,7 @@ export class SplatMesh extends THREE.Mesh {
      */
     build(splatBuffers, sceneOptions, keepSceneTransforms = true, finalBuild = false,
           onSplatTreeIndexesUpload, onSplatTreeConstruction, preserveVisibleRegion = true) {
-
+        const temp_time = new Date().getTime();
         this.sceneOptions = sceneOptions;
         this.finalBuild = finalBuild;
 
@@ -625,7 +627,6 @@ export class SplatMesh extends THREE.Mesh {
         } else {
             this.updateBaseDataFromSplatBuffers(fromSplat, toSplat);
         }
-
         this.updateDataTexturesFromBaseData(fromSplat, toSplat);
         this.updateVisibleRegion(sinceLastBuildOnly);
     }
@@ -901,11 +902,22 @@ export class SplatMesh extends THREE.Mesh {
         const shITextureDesc = this.splatDataTextures['sphericalHarmonics'];
         const shCompressionLevel = shITextureDesc ? shITextureDesc.compressionLevel : 0;
 
-        this.fillSplatDataArrays(this.splatDataTextures.baseData.covariances, this.splatDataTextures.baseData.scales,
-                                 this.splatDataTextures.baseData.rotations, this.splatDataTextures.baseData.centers,
-                                 this.splatDataTextures.baseData.colors, this.splatDataTextures.baseData.sphericalHarmonics, undefined,
-                                 covarianceCompressionLevel, scaleRotationCompressionLevel, shCompressionLevel,
-                                 fromSplat, toSplat, fromSplat);
+        this.fillSplatDataArrays(
+            this.splatDataTextures.baseData.covariances, 
+            this.splatDataTextures.baseData.scales,
+            this.splatDataTextures.baseData.rotations, 
+            this.splatDataTextures.baseData.centers,
+            this.splatDataTextures.baseData.colors, 
+            this.splatDataTextures.baseData.sphericalHarmonics, 
+            undefined,
+            covarianceCompressionLevel, 
+            scaleRotationCompressionLevel, 
+            shCompressionLevel,
+            fromSplat, 
+            toSplat, 
+            fromSplat,
+            undefined
+        );
     }
 
     updateDataTexturesFromBaseData(fromSplat, toSplat) {
@@ -1846,9 +1858,21 @@ export class SplatMesh extends THREE.Mesh {
      * @param {number} srcEnd The end location from which to pull source data
      * @param {number} destStart The start location from which to write data
      */
-    fillSplatDataArrays(covariances, scales, rotations, centers, colors, sphericalHarmonics, applySceneTransform,
-                        covarianceCompressionLevel = 0, scaleRotationCompressionLevel = 0, sphericalHarmonicsCompressionLevel = 1,
-                        srcStart, srcEnd, destStart = 0, sceneIndex) {
+    fillSplatDataArrays(
+        covariances, 
+        scales, 
+        rotations, 
+        centers, colors, 
+        sphericalHarmonics, 
+        applySceneTransform,
+        covarianceCompressionLevel = 0, 
+        scaleRotationCompressionLevel = 0, 
+        sphericalHarmonicsCompressionLevel = 1,
+        srcStart, 
+        srcEnd, 
+        destStart = 0, 
+        sceneIndex
+    ) {
         const scaleOverride = new THREE.Vector3();
         scaleOverride.x = undefined;
         scaleOverride.y = undefined;
@@ -1865,7 +1889,29 @@ export class SplatMesh extends THREE.Mesh {
             startSceneIndex = sceneIndex;
             endSceneIndex = sceneIndex;
         }
-        for (let i = startSceneIndex; i <= endSceneIndex; i++) {
+
+        // if have earlier buffers load in their cached versions if exist else skip!
+        for (let i = startSceneIndex; i <= endSceneIndex - 1; i++) {
+            if (applySceneTransform === undefined || applySceneTransform === null) {
+                applySceneTransform = this.dynamicMode ? false : true;
+            }
+
+            const scene = this.getScene(i);
+            const splatBuffer = scene.splatBuffer;
+
+            const cache = old_buffer_dict[`A_${i}`];
+            if(covariances && cache.covariances) covariances.set(cache.covariances);
+            if(scales && cache.scales) scales.set(cache.scales);
+            if(rotations && cache.rotations) rotations.set(cache.rotations);
+            if(centers && cache.centers) centers.set(cache.centers);
+            if(colors && cache.colors) colors.set(cache.colors);
+            if(sphericalHarmonics && cache.sphericalHarmonics) sphericalHarmonics.set(cache.sphericalHarmonics);
+
+            destStart += splatBuffer.getSplatCount();
+        }
+
+        // current buffer loaded and add to it...
+        for (let i = endSceneIndex; i <= endSceneIndex; i++) {
             if (applySceneTransform === undefined || applySceneTransform === null) {
                 applySceneTransform = this.dynamicMode ? false : true;
             }
@@ -1878,22 +1924,43 @@ export class SplatMesh extends THREE.Mesh {
                 sceneTransform = tempTransform;
             }
             if (covariances) {
-                splatBuffer.fillSplatCovarianceArray(covariances, sceneTransform, srcStart, srcEnd, destStart, covarianceCompressionLevel);
+                splatBuffer.fillSplatCovarianceArray(
+                    covariances, sceneTransform, 
+                    srcStart, srcEnd, destStart, 
+                    covarianceCompressionLevel);
             }
             if (scales || rotations) {
                 if (!scales || !rotations) {
                     throw new Error('SplatMesh::fillSplatDataArrays() -> "scales" and "rotations" must both be valid.');
                 }
-                splatBuffer.fillSplatScaleRotationArray(scales, rotations, sceneTransform,
-                                                        srcStart, srcEnd, destStart, scaleRotationCompressionLevel, scaleOverride);
+                splatBuffer.fillSplatScaleRotationArray(
+                    scales, rotations, sceneTransform,
+                    srcStart, srcEnd, destStart, 
+                    scaleRotationCompressionLevel, scaleOverride
+                );
             }
-            if (centers) splatBuffer.fillSplatCenterArray(centers, sceneTransform, srcStart, srcEnd, destStart);
-            if (colors) splatBuffer.fillSplatColorArray(colors, scene.minimumAlpha, srcStart, srcEnd, destStart);
+            if (centers) splatBuffer.fillSplatCenterArray(
+                centers, sceneTransform, 
+                srcStart, srcEnd, destStart);
+            if (colors) splatBuffer.fillSplatColorArray(
+                colors, scene.minimumAlpha, 
+                srcStart, srcEnd, destStart);
             if (sphericalHarmonics) {
-                splatBuffer.fillSphericalHarmonicsArray(sphericalHarmonics, this.minSphericalHarmonicsDegree,
-                                                        sceneTransform, srcStart, srcEnd, destStart, sphericalHarmonicsCompressionLevel);
+                splatBuffer.fillSphericalHarmonicsArray(
+                    sphericalHarmonics, this.minSphericalHarmonicsDegree, sceneTransform, 
+                    srcStart, srcEnd, destStart, 
+                    sphericalHarmonicsCompressionLevel);
             }
             destStart += splatBuffer.getSplatCount();
+
+            if(covariances) old_buffer_dict[`A_${i}`] = {
+                covariances: covariances?.slice(0),
+                scales: scales?.slice(0),
+                rotations: rotations?.slice(0),
+                centers: centers?.slice(0),
+                colors: colors?.slice(0),
+                sphericalHarmonics: sphericalHarmonics?.slice(0)
+            };
         }
     }
 
