@@ -74,7 +74,21 @@ setTimeout(() => {
         handleController(controller2);
 
         if(is_selecting){
-            splatBrush.addStamp(cursor.x, cursor.y, cursor.z);
+            const xrcam_position = new THREE.Vector3();
+            xrcam_position.setFromMatrixPosition(viewer.camera.matrixWorld);
+            const brush_position = new THREE.Vector3(cursor.x, cursor.y, cursor.z);
+
+            // const look_vector = xrcam_position.sub(brush_position).normalize();
+            const look_vector = new THREE.Vector3(0, 1, 0).normalize();
+            const up_vector = splatBrush.brush_up_vectors[splatBrush.selected_brush_slot].normalize();
+
+            const rot_axis = look_vector.clone().cross(up_vector).normalize();
+            const angle = look_vector.angleTo(up_vector);
+            const rot_mat4x4 = new THREE.Matrix4().makeRotationAxis(rot_axis, angle);
+            const jitter_mat4x4 = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), Math.PI * 2 * Math.random());
+            const final_mat = jitter_mat4x4.multiply(rot_mat4x4)
+
+            splatBrush.addStamp(cursor.x, cursor.y, cursor.z, rot_mat4x4);
             splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(splatBrush.strokeArray);
             splatBrush.viewer.addSplatBuffers([splatBrush.strokeBuffer], [], false, false, false, true);
         }

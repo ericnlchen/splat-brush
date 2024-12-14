@@ -8,7 +8,7 @@ const HOST_LOCAL = true;
 let baseDirectory = './build-ts/';
 let port = 8443;
 
-let host = HOST_LOCAL ? 'localhost' : '108.61.23.254';
+let host = HOST_LOCAL ? '0.0.0.0' : '108.61.23.254';
 let lasttRequesTime = performance.now() / 1000;
 
 let options = {
