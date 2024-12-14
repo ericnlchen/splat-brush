@@ -36,7 +36,7 @@ export class SplatBrush {
     brush_num_subsamples = 8;
     brush_subsample_size = 1024;
     brush_subsample_arrays: number[][][][] = []; // [slot][subsample][splat index][params]
-    selected_brush_slot = 0;
+    selected_brush_slot = -1;
 
     constructor(viewer : Viewer, config : SplatBrushConfig) {
         this.strokeArray = new UncompressedSplatArray(2);
@@ -60,6 +60,7 @@ export class SplatBrush {
 
     loadBrush(array: UncompressedSplatArray){
         this.brush_og_arrays.push(array);
+        this.selected_brush_slot = this.brush_og_arrays.length - 1;
         const current_brush_subsample_arrays = [];
 
         // compute up vector
