@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const HOST_LOCAL = false;
+const HOST_LOCAL = true;
 
 let baseDirectory = './build-ts/';
 let port = 8443;

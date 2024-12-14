@@ -5,9 +5,9 @@ import throttle from '../node_modules/lodash/throttle.js';
 // @ts-ignore
 import * as THREE from 'three';
 import { get_waiting_for_render, set_waiting_for_render } from './Viewer.js';
-import * as numeric from 'numeric';
-import * as math from 'mathjs';
-import * as SVD from 'svd-js';
+// import * as numeric from 'numeric';
+// import * as math from 'mathjs';
+// import * as SVD from 'svd-js';
 
 // Config object to pass to splatBrush
 export interface SplatBrushConfig {
@@ -85,23 +85,23 @@ export class SplatBrush {
         console.log("SCALE BOUNDS", min_array(per_max_scales), max_array(per_max_scales))
         console.log("SCALE QUARTILES", Q1, Q3);
 
-        const { u, v, q } = SVD.SVD(centered_positions);
-        console.log('u, v, q', u, v, q)
-        const index_smallest = q.map(((n, i) => [n, i])).sort((a, b) => b[0] - a[0])[0][1];
-        const normal = v[index_smallest];
-        const up_vector = new THREE.Vector3(normal[0], normal[2], normal[1]);
-        // if(up_vector.dot(new THREE.Vector3(0, 1, 0)) < 0) up_vector.multiplyScalar(-1);
-        up_vector.normalize();
-        // this.brush_up_vectors.push(up_vector);
+        // const { u, v, q } = SVD.SVD(centered_positions);
+        // console.log('u, v, q', u, v, q)
+        // const index_smallest = q.map(((n, i) => [n, i])).sort((a, b) => b[0] - a[0])[0][1];
+        // const normal = v[index_smallest];
+        // const up_vector = new THREE.Vector3(normal[0], normal[2], normal[1]);
+        // // if(up_vector.dot(new THREE.Vector3(0, 1, 0)) < 0) up_vector.multiplyScalar(-1);
+        // up_vector.normalize();
+        // // this.brush_up_vectors.push(up_vector);
 
         const start = new THREE.Vector3(0, 0, 0);
-        v.forEach(v => {
-            const end = start.clone().add(new THREE.Vector3(...v));
-            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-            const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
-            const line = new THREE.Line(geometry, material);
-            this.viewer.sceneHelper!.threeScene.add(line);
-        })
+        // v.forEach(v => {
+        //     const end = start.clone().add(new THREE.Vector3(...v));
+        //     const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+        //     const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
+        //     const line = new THREE.Line(geometry, material);
+        //     this.viewer.sceneHelper!.threeScene.add(line);
+        // })
 
         const sampled_normals: [number, number, number][] = [];
         while(sampled_normals.length < 100000) {
@@ -143,7 +143,7 @@ export class SplatBrush {
         this.viewer.sceneHelper!.threeScene.add(line);
         this.brush_up_vectors.push(new THREE.Vector3(...avg_normal));
 
-        console.log('COMPUTED UP VECTOR', up_vector)
+        // console.log('COMPUTED UP VECTOR', up_vector)
 
         // get subsamples
         for(let n = 0; n < this.brush_num_subsamples; n++){

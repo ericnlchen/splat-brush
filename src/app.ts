@@ -29,46 +29,51 @@ let splatBrushConfig : SplatBrushConfig = {
     selectedStampArray: new UncompressedSplatArray()
 };
 
-// Get the user's selected file
-const filePicker = document.getElementById("file-picker");
-if (filePicker && filePicker instanceof HTMLInputElement) {
-    filePicker.addEventListener("change", handlePickFile, false);
-}
-async function readFileToArrayBuffer(file : File) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-      reader.onerror = (error) => {
-        reject(error);
-      };
-      reader.readAsArrayBuffer(file);
-    });
-}
+// File paths for the pre-loaded stamps
+const plyFiles = [
+    './assets/stamp1.ply',
+    './assets/stamp2.ply',
+    './assets/stamp3.ply',
+    './assets/stamp4.ply',
+    './assets/stamp5.ply'
+];
 
-async function handlePickFile(this : HTMLInputElement) {
-    const files = this.files;
-    if (files) {
-        const selectedFile = files[0];
-        const result = await readFileToArrayBuffer(selectedFile);
-        if (result && result instanceof ArrayBuffer) {
-            const arrayBuffer : ArrayBuffer = result;
-            // Load the scene into a splat array
-            let stampArray = PlyParser.parseToUncompressedSplatArray(arrayBuffer, undefined);
+
+// preload all .ply files and store them in splatBrush.brush_og_arrays
+async function preloadAllStampFiles(plyFiles: string[], splatBrush: SplatBrush) {
+    
+    for (const filePath of plyFiles) {
+        try {
+            const response = await fetch(filePath);
+            const arrayBuffer = await response.arrayBuffer();
+
+            // Parse the ArrayBuffer into an UncompressedSplatArray
+            const stampArray = PlyParser.parseToUncompressedSplatArray(arrayBuffer, undefined);
+            
             if (stampArray) {
-                splatBrushConfig.selectedStampArray = stampArray;
-                splatBrush.loadBrush(stampArray);
+                splatBrush.loadBrush(stampArray)
+                console.log(`Successfully loaded stamp from ${filePath}`);
+            } else {
+                console.error(`Failed to parse .ply file into splat array: ${filePath}`);
             }
-            else {
-                console.log('Error: failed parseToUncompressedSplatArray.')
-            }
-            console.log(stampArray);
+        } catch (error) {
+            console.error(`Error loading .ply file ${filePath}:`, error);
         }
     }
+
+    // Store all the preloaded stamp arrays in splatBrush.brush_og_arrays
+    console.log('All files preloaded into splatBrush.brush_og_arrays');
 }
 
+// Button event listeners for loading the selected .ply file
+document.getElementById("button1")?.addEventListener("click", () => splatBrush.selected_brush_slot = 0);
+document.getElementById("button2")?.addEventListener("click", () => splatBrush.selected_brush_slot = 1);
+document.getElementById("button3")?.addEventListener("click", () => splatBrush.selected_brush_slot = 2);
+document.getElementById("button4")?.addEventListener("click", () => splatBrush.selected_brush_slot = 3);
+document.getElementById("button5")?.addEventListener("click", () => splatBrush.selected_brush_slot = 4);
+
 const splatBrush = new SplatBrush(viewer, splatBrushConfig);
+preloadAllStampFiles(plyFiles, splatBrush);
 
 // Create the UI
 const UI = new SplatUI(splatBrush);
