@@ -34,7 +34,7 @@ export class SplatBrush {
     brush_og_arrays: UncompressedSplatArray[] = [];
     brush_up_vectors: THREE.Vector3[] = [];
     brush_num_subsamples = 8;
-    brush_subsample_size = 1024;
+    brush_subsample_size = 64;
     brush_subsample_arrays: number[][][][] = []; // [slot][subsample][splat index][params]
     selected_brush_slot = -1;
 
@@ -85,24 +85,6 @@ export class SplatBrush {
         console.log("SCALE BOUNDS", min_array(per_max_scales), max_array(per_max_scales))
         console.log("SCALE QUARTILES", Q1, Q3);
 
-        // const { u, v, q } = SVD.SVD(centered_positions);
-        // console.log('u, v, q', u, v, q)
-        // const index_smallest = q.map(((n, i) => [n, i])).sort((a, b) => b[0] - a[0])[0][1];
-        // const normal = v[index_smallest];
-        // const up_vector = new THREE.Vector3(normal[0], normal[2], normal[1]);
-        // // if(up_vector.dot(new THREE.Vector3(0, 1, 0)) < 0) up_vector.multiplyScalar(-1);
-        // up_vector.normalize();
-        // // this.brush_up_vectors.push(up_vector);
-
-        const start = new THREE.Vector3(0, 0, 0);
-        // v.forEach(v => {
-        //     const end = start.clone().add(new THREE.Vector3(...v));
-        //     const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-        //     const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
-        //     const line = new THREE.Line(geometry, material);
-        //     this.viewer.sceneHelper!.threeScene.add(line);
-        // })
-
         const sampled_normals: [number, number, number][] = [];
         while(sampled_normals.length < 100000) {
             const i0 = Math.random() * array.splatCount | 0;
@@ -136,11 +118,6 @@ export class SplatBrush {
         const avg_normal = sampled_normals
             .reduce((a, v) => [a[0] + v[0], a[1] + v[1], a[2] + v[2]], [0, 0, 0])
             .map(n => n / sampled_normals.length);
-        const end = start.clone().add(new THREE.Vector3(...avg_normal));
-        const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-        const material = new THREE.LineBasicMaterial({ color: 0x0000ff }); // Red color
-        const line = new THREE.Line(geometry, material);
-        this.viewer.sceneHelper!.threeScene.add(line);
         this.brush_up_vectors.push(new THREE.Vector3(...avg_normal));
 
         // console.log('COMPUTED UP VECTOR', up_vector)
@@ -178,6 +155,14 @@ export class SplatBrush {
             current_brush_subsample_arrays.push(subsample_splats);
         }
         this.brush_subsample_arrays.push(current_brush_subsample_arrays);
+
+        if(this.brush_og_arrays.length === 5){
+            const geometry = new THREE.BoxGeometry( 1, 5, 1 ); 
+            const material = new THREE.MeshBasicMaterial( {color: 0xffff00} ); 
+            const cube = new THREE.Mesh( geometry, material ); 
+            cube.position.set(3, 3, 0);
+            this.viewer.sceneHelper!.threeScene.add(cube);
+        }
     }
 
     // Update stroke buffer on mousemove
@@ -191,7 +176,7 @@ export class SplatBrush {
                 let [x, y, z, scale0, scale1, scale2, rot0, rot1, rot2, rot3, r, g, b, opacity, ...rest] = chosen_subsample[i];
                 
                 // Scale down
-                const stampScale = 0.2;
+                const stampScale = 0.02;
                 const sizing_scale = 5;
                 scale0 = scale0 * stampScale * sizing_scale;
                 scale1 = scale1 * stampScale * sizing_scale
@@ -284,12 +269,12 @@ export class SplatBrush {
             const up_vector = this.brush_up_vectors[this.selected_brush_slot].normalize();
 
             // vector linine preview
-            const start = new THREE.Vector3(worldX, worldY, worldZ);
-            const end = start.clone().add(up_vector);
-            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-            const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
-            const line = new THREE.Line(geometry, material);
-            this.viewer.sceneHelper!.threeScene.add(line);
+            // const start = new THREE.Vector3(worldX, worldY, worldZ);
+            // const end = start.clone().add(up_vector);
+            // const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+            // const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
+            // const line = new THREE.Line(geometry, material);
+            // this.viewer.sceneHelper!.threeScene.add(line);
 
             // do the actual rotation
             const rot_axis = look_vector.clone().cross(up_vector).normalize();

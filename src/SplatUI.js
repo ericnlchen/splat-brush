@@ -15,8 +15,10 @@ export class SplatUI {
         this.palette = new THREE.Vector3();
         this.ui_circle_array = [];
 
-        this.width = 1;
-        this.height = 0.5;
+        this.width = 0.7;
+        this.height = 0.4;
+
+        this.selectModeOn = false; // shows ray, allows picking stamps
 
         this.makeUIPanel();
         setTimeout(() => {this.init()}, 500);
@@ -29,48 +31,30 @@ export class SplatUI {
         controller.updateMatrixWorld( true );
         const pivot = controller.getObjectByName('pivot');
         this.cursor.setFromMatrixPosition(pivot.matrixWorld);
-        this.is_selecting = true;
+        this.is_drawing = true;
 
 	    // raycaster.setFromXRController(this.controller1);
-        const rotationMatrix3 = new THREE.Matrix3();
-        rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
-        raycaster.set(this.cursor, new THREE.Vector3(0, 0, -1).applyMatrix3(rotationMatrix3)); // ??
-
-
-        const intersects = raycaster.intersectObjects([this.container], true );
-        if(intersects.length > 0){
-
-            // color selection logic here
-            for(let i = 0; i < this.ui_circle_array.length; i++){
-                const intersects_ui_button = raycaster.intersectObjects([this.ui_circle_array[i]], true );
-                if(intersects_ui_button.length > 0){
-                    // TODO: this is where the stamp loading code will go!
-                    const geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
-                    const material = new THREE.MeshBasicMaterial( {color: [
-                        0xff0000,
-                        0xffff00,
-                        0x00ff00,
-                        0x00ffff,
-                        0x0000ff
-                    ][i]} ); 
-                    const cube = new THREE.Mesh( geometry, material ); 
-                    cube.position.set(0, 5, 0);
-                    this.scene.add( cube );
+        if (this.selectModeOn) {
+            const rotationMatrix3 = new THREE.Matrix3();
+            rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
+            raycaster.set(this.cursor, new THREE.Vector3(0, 0, -1).applyMatrix3(rotationMatrix3)); // ??
+    
+            const intersects = raycaster.intersectObjects([this.container], true );
+            if(intersects.length > 0){
+    
+                // color selection logic here
+                for(let i = 0; i < this.ui_circle_array.length; i++){
+                    const intersects_ui_button = raycaster.intersectObjects([this.ui_circle_array[i]], true );
+                    if(intersects_ui_button.length > 0){
+                        this.splatBrush.selected_brush_slot = i;
+                    }
                 }
             }
         }
-
-        const rayGeometry = new THREE.BufferGeometry().setFromPoints([
-            raycaster.ray.origin,
-            raycaster.ray.origin.clone().add(raycaster.ray.direction.clone())
-        ]);
-        const rayMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line
-        const rayLine = new THREE.Line(rayGeometry, rayMaterial);
-        this.scene.add(rayLine);
     }
 
     onSelectEnd() {
-        this.is_selecting = false;
+        this.is_drawing = false;
     }
 
     handleController1(controller) {
@@ -83,8 +67,75 @@ export class SplatUI {
         this.palette.setFromMatrixPosition(pivotL.matrixWorld);
     }
 
+    handleControllerGamepad() {
+        // On metaquest pro:
+        // - buttons[0] is main trigger
+        // - buttons[1] is secondary trigger (squeeze?)
+        // - buttons[2] is nothing?
+        // - buttons[3] is joystick press
+        // - buttons[4] is A button
+        if (this.renderer.xr && this.renderer.xr.getSession()) {
+            const sources = this.renderer.xr.getSession().inputSources;
+            for (let i = 0; i < sources.length; i++) {
+                if (i == 1) { // right controller
+                    const gamepad = sources[i].gamepad;
+                    if (gamepad) {
+                        const buttons = gamepad.buttons;
+                        if (buttons.length > 0) {
+                            if (buttons[4].pressed) {
+                                this.selectModeOn = true;
+                            }
+                            else {
+                                this.selectModeOn = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    handleDrawSelectionRay(controller) {
+        if (this.selectModeOn) {
+            if (!this.selectionRay) {
+                const rotationMatrix3 = new THREE.Matrix3();
+                const pivot = controller.getObjectByName('pivot');
+                this.cursor.setFromMatrixPosition(pivot.matrixWorld);
+                rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
+                raycaster.set(this.cursor, new THREE.Vector3(0, 0, -1).applyMatrix3(rotationMatrix3));
+        
+                const rayGeometry = new THREE.BufferGeometry().setFromPoints([
+                    raycaster.ray.origin,
+                    raycaster.ray.origin.clone().add(raycaster.ray.direction.clone())
+                ]);
+                const rayMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line
+                this.selectionRay = new THREE.Line(rayGeometry, rayMaterial);
+                this.scene.add(this.selectionRay);
+            }
+            else {
+                // update selectionRay coords
+                const rotationMatrix3 = new THREE.Matrix3();
+                const pivot = controller.getObjectByName('pivot');
+                this.cursor.setFromMatrixPosition(pivot.matrixWorld);
+                rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
+                raycaster.set(this.cursor, new THREE.Vector3(0, 0, -1).applyMatrix3(rotationMatrix3));
+                this.selectionRay.geometry?.setFromPoints([
+                    raycaster.ray.origin,
+                    raycaster.ray.origin.clone().add(raycaster.ray.direction.clone())
+                ]);
+
+                if(this.selectionRay.geometry) this.selectionRay.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+        else {
+            this.scene.remove(this.selectionRay);
+            this.selectionRay = undefined;
+        }
+    }
+
     init() {
-        this.is_selecting = false;
+        this.is_drawing = false;
 
         console.log(this.renderer.xr.enabled, "HUH??");
         this.controller1 = this.renderer.xr.getController( 1 );
@@ -114,10 +165,42 @@ export class SplatUI {
         set_custom_update_injection(() => {
             this.handleController1(this.controller1);
             this.handleController2(this.controller2);
+            this.handleControllerGamepad();
+            this.handleDrawSelectionRay(this.controller1);
             this.handlePanelMove();
 
-            if (this.is_selecting) {
-                this.splatBrush.addStamp(this.cursor.x, this.cursor.y, this.cursor.z);
+
+            if (this.is_drawing && !this.selectModeOn) {
+                // const xrcam_position = new THREE.Vector3();
+                // xrcam_position.setFromMatrixPosition(this.viewer.camera.matrixWorld);
+                // const brush_position = new THREE.Vector3(this.cursor.x, this.cursor.y, this.cursor.z);
+                // const look_vector = xrcam_position.sub(brush_position).normalize();
+                // const look_vector = new THREE.Vector3(0, 1, 0).normalize();
+                const up_vector = this.splatBrush.brush_up_vectors[this.splatBrush.selected_brush_slot].normalize();
+    
+                const rotationMatrix3 = new THREE.Matrix3();
+                const pivot = this.controller1.getObjectByName('pivot');
+                this.cursor.setFromMatrixPosition(pivot.matrixWorld);
+                rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
+                const look_vector = new THREE.Vector3(0, 1, 0).applyMatrix3(rotationMatrix3);
+
+                // vector linine preview
+                // const start = new THREE.Vector3(worldX, worldY, worldZ);
+                // const end = start.clone().add(up_vector);
+                // const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+                // const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color
+                // const line = new THREE.Line(geometry, material);
+                // this.viewer.sceneHelper!.threeScene.add(line);
+    
+                // do the actual rotation
+                const rot_axis = look_vector.clone().cross(up_vector).normalize();
+                const angle = look_vector.angleTo(up_vector);
+                const rot_mat4x4 = new THREE.Matrix4().makeRotationAxis(rot_axis, angle);
+                // const jitter_mat4x4 = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), Math.PI * 2 * Math.random());
+                // const final_mat = jitter_mat4x4.multiply(rot_mat4x4);
+                const final_mat = rot_mat4x4;
+
+                this.splatBrush.addStamp(this.cursor.x, this.cursor.y, this.cursor.z, final_mat);
                 this.splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.splatBrush.strokeArray);
                 this.splatBrush.viewer.addSplatBuffers([this.splatBrush.strokeBuffer], [], false, false, false, true);
             }
@@ -126,9 +209,9 @@ export class SplatUI {
         console.log('done with init')
 
         setTimeout(() => {
-            this.splatBrush.addStamp(10, 10, 10);
-                this.splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.splatBrush.strokeArray);
-                this.splatBrush.viewer.addSplatBuffers([this.splatBrush.strokeBuffer], [], false, false, false, true);
+            this.splatBrush.addStamp(10, 10, 10, new THREE.Matrix4());
+            this.splatBrush.strokeBuffer = SplatBufferGenerator.getStandardGenerator(1, 0).generateFromUncompressedSplatArray(this.splatBrush.strokeArray);
+            this.splatBrush.viewer.addSplatBuffers([this.splatBrush.strokeBuffer], [], false, false, false, true);
         }, 1000);
     }
 
