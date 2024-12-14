@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { set_custom_update_injection } from './Viewer.js';
 import { SplatBufferGenerator } from './index.js';
 
+const raycaster = new THREE.Raycaster();
+
 export class SplatUI {
     constructor(splatBrush) {
         this.splatBrush = splatBrush;
@@ -10,6 +12,8 @@ export class SplatUI {
         this.scene = this.viewer.sceneHelper.threeScene;
         this.renderer = this.viewer.renderer;
         this.cursor = new THREE.Vector3();
+        this.palette = new THREE.Vector3();
+        this.ui_circle_array = [];
 
         this.width = 1;
         this.height = 0.5;
@@ -26,43 +30,90 @@ export class SplatUI {
         const pivot = controller.getObjectByName('pivot');
         this.cursor.setFromMatrixPosition(pivot.matrixWorld);
         this.is_selecting = true;
+
+	    // raycaster.setFromXRController(this.controller1);
+        const rotationMatrix3 = new THREE.Matrix3();
+        rotationMatrix3.setFromMatrix4(pivot.matrixWorld);
+        raycaster.set(this.cursor, new THREE.Vector3(0, 0, -1).applyMatrix3(rotationMatrix3)); // ??
+
+
+        const intersects = raycaster.intersectObjects([this.container], true );
+        if(intersects.length > 0){
+
+            // color selection logic here
+            for(let i = 0; i < this.ui_circle_array.length; i++){
+                const intersects_ui_button = raycaster.intersectObjects([this.ui_circle_array[i]], true );
+                if(intersects_ui_button.length > 0){
+                    // TODO: this is where the stamp loading code will go!
+                    const geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
+                    const material = new THREE.MeshBasicMaterial( {color: [
+                        0xff0000,
+                        0xffff00,
+                        0x00ff00,
+                        0x00ffff,
+                        0x0000ff
+                    ][i]} ); 
+                    const cube = new THREE.Mesh( geometry, material ); 
+                    cube.position.set(0, 5, 0);
+                    this.scene.add( cube );
+                }
+            }
+        }
+
+        const rayGeometry = new THREE.BufferGeometry().setFromPoints([
+            raycaster.ray.origin,
+            raycaster.ray.origin.clone().add(raycaster.ray.direction.clone())
+        ]);
+        const rayMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red line
+        const rayLine = new THREE.Line(rayGeometry, rayMaterial);
+        this.scene.add(rayLine);
     }
 
     onSelectEnd() {
         this.is_selecting = false;
     }
 
-    handleController(controller) {
+    handleController1(controller) {
         const pivot = controller.getObjectByName('pivot');
         this.cursor.setFromMatrixPosition(pivot.matrixWorld);
+    }
+
+    handleController2(controller) {
+        const pivotL = controller.getObjectByName('pivotL');
+        this.palette.setFromMatrixPosition(pivotL.matrixWorld);
     }
 
     init() {
         this.is_selecting = false;
 
         console.log(this.renderer.xr.enabled, "HUH??");
-        const controller1 = this.renderer.xr.getController( 0 );
-        controller1.addEventListener( 'selectstart', () => this.onSelectStart(controller1) );
-        controller1.addEventListener( 'selectend', () => this.onSelectEnd(controller1));
-        this.scene.add(controller1);
+        this.controller1 = this.renderer.xr.getController( 1 );
+        this.controller1.addEventListener( 'selectstart', () => this.onSelectStart(this.controller1) );
+        this.controller1.addEventListener( 'selectend', () => this.onSelectEnd(this.controller1));
+        this.scene.add(this.controller1);
         
-        const controller2 = this.renderer.xr.getController( 1 );
-        controller2.addEventListener( 'selectstart', () => this.onSelectStart(controller2) );
-        controller2.addEventListener( 'selectend', () => this.onSelectEnd(controller2) );
-        this.scene.add(controller2);
+        this.controller2 = this.renderer.xr.getController( 0 );
+        this.controller2.addEventListener( 'selectstart', () => this.onSelectStart(this.controller2) );
+        this.controller2.addEventListener( 'selectend', () => this.onSelectEnd(this.controller2) );
+        this.scene.add(this.controller2);
     
         const pivot = new THREE.Mesh( new THREE.IcosahedronGeometry( 0.01, 3 ) );
         pivot.name = 'pivot';
         pivot.position.z = -0.05;
+        const pivotL = new THREE.Mesh( new THREE.IcosahedronGeometry( 0.01, 3 ) );
+        pivotL.name = 'pivotL';
+        pivotL.position.z = -0.05;
     
         const group = new THREE.Group();
         group.add( pivot );
-        controller1.add( group.clone() );
-        controller2.add( group.clone() );
+        const groupL = new THREE.Group();
+        groupL.add( pivotL );
+        this.controller1.add( group.clone() );
+        this.controller2.add( groupL.clone() );
 
         set_custom_update_injection(() => {
-            this.handleController(controller1);
-            this.handleController(controller2);
+            this.handleController1(this.controller1);
+            this.handleController2(this.controller2);
             this.handlePanelMove();
 
             if (this.is_selecting) {
@@ -112,6 +163,7 @@ export class SplatUI {
             let cx = cx_neg1_1 * ((this.width / 2) - (this.width / (2 * num_buttons)))
             circle.position.copy(new THREE.Vector3(cx, 0, 0.01)); // offset in front of the panel
             this.container.add( circle );
+            this.ui_circle_array.push(circle);
         }
     
         this.container.add(
@@ -125,20 +177,26 @@ export class SplatUI {
     };
     
     handlePanelMove = () => {
-        const lookVector = new THREE.Vector3();
-        const position = new THREE.Vector3();
+        // const lookVector = new THREE.Vector3();
+        // const position = new THREE.Vector3();
     
-        position.setFromMatrixPosition(this.viewer.camera.matrixWorld);
+        // position.setFromMatrixPosition(this.viewer.camera.matrixWorld);
     
-        lookVector.set(0, 0, -1); // Default forward direction in local space
-        lookVector.applyMatrix4(this.viewer.camera.matrixWorld).sub(position).normalize();
+        // lookVector.set(0, 0, -1); // Default forward direction in local space
+        // lookVector.applyMatrix4(this.viewer.camera.matrixWorld).sub(position).normalize();
     
+        // this.container.position.copy(
+        //     position.clone().add(lookVector.clone().multiplyScalar(5))
+        // );
+        // ThreeMeshUI.update();
+
         this.container.position.copy(
-            position.clone().add(lookVector.clone().multiplyScalar(5))
-        );
-        // requestAnimationFrame(this.animate);
+            this.palette.clone()
+        )
+        const pivotL = this.controller2.getObjectByName('pivotL');
+        this.container.quaternion.setFromRotationMatrix(pivotL.matrixWorld);
+
         ThreeMeshUI.update();
-        // this.viewer.renderer.render(this.scene, this.viewer.camera);
     };
     
 }
