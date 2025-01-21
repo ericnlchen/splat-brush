@@ -6,15 +6,10 @@ import * as path from 'path';
 const HOST_LOCAL = true;
 
 let baseDirectory = './build-ts/';
-let port = 8443;
+let port = 3000;
 
 let host = HOST_LOCAL ? '0.0.0.0' : '108.61.23.254';
 let lasttRequesTime = performance.now() / 1000;
-
-let options = {
-  key: HOST_LOCAL ? fs.readFileSync('./cert/localhost.key') : fs.readFileSync('./cert/key.pem'),
-  cert: HOST_LOCAL ? fs.readFileSync('./cert/localhost.crt') : fs.readFileSync('./cert/cert.pem')
-};
 
 const serve = async (request, response) => {
   response.setHeader("Access-Control-Allow-Origin", "*");
@@ -111,10 +106,6 @@ const serve = async (request, response) => {
   lasttRequesTime = requestTime;
 }
 
-// if(HOST_LOCAL){
-//   http.createServer(serve).listen(port, host);
-// } else {
-  https.createServer(options, serve).listen(port, host);
-// }
+http.createServer(serve).listen(port, 'localhost');
 
 console.log("Server running at " + host + ':' + port);

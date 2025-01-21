@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    server_name splatbrush.app www.splatbrush.app;
+
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name splatbrush.app www.splatbrush.app;
+
+    ssl_certificate /home/linuxuser/splat-brush/cert/splatbrush.app.cert;
+    ssl_certificate_key /home/linuxuser/splat-brush/cert/splatbrush.app.key;
+
+    location / {
+        # Proxy requests to the Node.js server
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
