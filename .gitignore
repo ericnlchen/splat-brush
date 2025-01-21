@@ -4,8 +4,12 @@ demo/assets/data
 
 build-ts/*
 !build-ts/index.html
-build-ts/assets/data
-!build-ts/assets
+!build-ts/assets/
+!build-ts/assets/stamp1.ply
+!build-ts/assets/stamp2.ply
+!build-ts/assets/stamp3.ply
+!build-ts/assets/stamp4.ply
+!build-ts/assets/stamp5.ply
 
 .DS_Store
 *.ply
