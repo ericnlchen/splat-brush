@@ -1,4 +1,7 @@
+cloudflare proxy is active and bypass cache is turned ON
+
 set up nginx reverse proxy with the following and copy splatbrush.app.nginx into the actual nginx config:
+nginx takes 443 HTTPS request, validates the SSL and redirects to local HTTP server on port 3000
 
     sudo apt install nginx
     sudo systemctl start nginx
