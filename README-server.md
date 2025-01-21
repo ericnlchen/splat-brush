@@ -12,7 +12,6 @@ set up nginx reverse proxy with the following and copy splatbrush.app.nginx into
 
 and put the origin CA cert/key into cert/
 
-
 to start the server (persistent through pm2):
 
     pm2 start ecosystem.config.js
