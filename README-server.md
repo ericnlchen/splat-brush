@@ -18,3 +18,4 @@ and put the origin CA cert/key into cert/
 to start the server (persistent through pm2):
 
     pm2 start ecosystem.config.js
+    pm2 save
