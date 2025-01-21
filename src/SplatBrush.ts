@@ -156,13 +156,6 @@ export class SplatBrush {
         }
         this.brush_subsample_arrays.push(current_brush_subsample_arrays);
 
-        if(this.brush_og_arrays.length === 5){
-            const geometry = new THREE.BoxGeometry( 1, 5, 1 ); 
-            const material = new THREE.MeshBasicMaterial( {color: 0xffff00} ); 
-            const cube = new THREE.Mesh( geometry, material ); 
-            cube.position.set(3, 3, 0);
-            this.viewer.sceneHelper!.threeScene.add(cube);
-        }
     }
 
     // Update stroke buffer on mousemove

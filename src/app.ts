@@ -19,12 +19,6 @@ const viewer = new Viewer({
 });
 viewer.start();
 
-const geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
-const material = new THREE.MeshBasicMaterial( {color: 0xff0000} ); 
-const cube = new THREE.Mesh( geometry, material ); 
-cube.position.set(3, 0, 0);
-viewer.sceneHelper!.threeScene.add( cube );
-
 let splatBrushConfig : SplatBrushConfig = {
     selectedStampArray: new UncompressedSplatArray()
 };
